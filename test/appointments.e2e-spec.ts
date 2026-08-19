@@ -11,6 +11,11 @@ interface TokenResponse {
   access_token: string;
 }
 
+interface RegisterResponse {
+  access_token: string;
+  user: IdResponse;
+}
+
 describe('AppointmentsController (e2e)', () => {
   // Emails uniques : la base e2e n'est pas réinitialisée entre les exécutions.
   const suffix = uniqueSuffix();
@@ -37,27 +42,29 @@ describe('AppointmentsController (e2e)', () => {
 
     // Create test users
     const studentResponse = await request(app.getHttpServer() as Server)
-      .post('/users')
+      .post('/auth/register')
       .send({
         email: studentEmail,
         password: 'test123',
-        firstName: 'Student',
-        role: 'student',
+        firstName: 'Client',
+        role: 'client',
+        profession: 'Particulier',
       })
       .expect(201);
 
     const teacherResponse = await request(app.getHttpServer() as Server)
-      .post('/users')
+      .post('/auth/register')
       .send({
         email: teacherEmail,
         password: 'test123',
-        firstName: 'Teacher',
-        role: 'teacher',
+        firstName: 'Prestataire',
+        role: 'prestataire',
+        profession: 'Coiffeur',
       })
       .expect(201);
 
-    studentId = (studentResponse.body as IdResponse).id;
-    teacherId = (teacherResponse.body as IdResponse).id;
+    studentId = (studentResponse.body as RegisterResponse).user.id;
+    teacherId = (teacherResponse.body as RegisterResponse).user.id;
 
     studentToken = await login(studentEmail);
     teacherToken = await login(teacherEmail);

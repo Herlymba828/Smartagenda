@@ -5,6 +5,7 @@ import { User } from '../users/entities/user.entity';
 import { RendezvousController } from './rendezvous.controller';
 import { RendezvousService } from './rendezvous.service';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { UsersModule } from '../users/users.module';
 
 /**
  * Module des rendez-vous (appointments).
@@ -15,7 +16,11 @@ import { NotificationsModule } from '../notifications/notifications.module';
  * à la création et à chaque changement de statut.
  */
 @Module({
-  imports: [TypeOrmModule.forFeature([Appointment, User]), NotificationsModule],
+  imports: [
+    TypeOrmModule.forFeature([Appointment, User]),
+    NotificationsModule,
+    UsersModule,
+  ],
   controllers: [RendezvousController],
   providers: [RendezvousService],
   exports: [RendezvousService],

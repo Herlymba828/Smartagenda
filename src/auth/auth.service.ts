@@ -2,7 +2,8 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { verifyPassword } from '../utils/hash.util';
-import { User, UserRole } from '../users/entities/user.entity';
+import { User } from '../users/entities/user.entity';
+import { CompleteProfileDto } from './dto/complete-profile.dto';
 import { RegisterDto } from './dto/register.dto';
 
 /** Type utilitaire : utilisateur sans le champ password (qui est select:false). */
@@ -71,7 +72,8 @@ export class AuthService {
   /**
    * Inscrit un nouvel utilisateur et le connecte immédiatement.
    *
-   * Le rôle par défaut est `student` ; `admin` est refusé au niveau du DTO.
+   * Rôle et profession étant obligatoires au niveau du DTO, le profil est
+   * considéré comme complet dès l'inscription.
    *
    * @returns { access_token, user } — l'utilisateur créé sans son mot de passe
    * @throws ConflictException si l'email est déjà utilisé
@@ -79,10 +81,23 @@ export class AuthService {
   async register(dto: RegisterDto) {
     const created = await this.usersService.create({
       ...dto,
-      role: dto.role ?? UserRole.STUDENT,
+      profileCompleted: true,
     });
     const { password, ...user } = created;
     void password;
     return { ...this.login(user), user };
+  }
+
+  /**
+   * Renseigne le rôle technique et la profession d'un compte existant.
+   *
+   * Un nouveau JWT est émis car le rôle fait partie du payload : sans cela le
+   * client conserverait un token portant son ancien rôle.
+   *
+   * @returns { access_token, user } — le profil complété sans son mot de passe
+   */
+  async completeProfile(userId: number, dto: CompleteProfileDto) {
+    const updated = await this.usersService.completeProfile(userId, dto);
+    return { ...this.login(updated), user: updated };
   }
 }

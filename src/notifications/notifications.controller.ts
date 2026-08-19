@@ -13,6 +13,7 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { ProfileCompletionGuard } from '../auth/profile-completion.guard';
 import type { JwtRequest } from '../common/types/jwt-request';
 import { NotificationsService } from './notifications.service';
 
@@ -30,7 +31,7 @@ import { NotificationsService } from './notifications.service';
  */
 @ApiTags('notifications')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, ProfileCompletionGuard)
 @Controller('notifications')
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}

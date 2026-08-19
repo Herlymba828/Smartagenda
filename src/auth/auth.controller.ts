@@ -1,9 +1,27 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Patch,
+  Post,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { AuthService } from './auth.service';
+import { JwtAuthGuard } from './jwt-auth.guard';
+import { SkipProfileCompletion } from './skip-profile-completion.decorator';
+import { CompleteProfileDto } from './dto/complete-profile.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import type { JwtRequest } from '../common/types/jwt-request';
 
 /**
  * Contrôleur d'authentification.
@@ -63,5 +81,31 @@ export class AuthController {
   @ApiResponse({ status: 429, description: 'Too many requests' })
   async register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto);
+  }
+
+  /**
+   * PATCH /auth/complete-profile
+   *
+   * Permet à un compte existant (créé avant l'introduction du rôle technique)
+   * de déclarer son rôle et sa profession. Seule route authentifiée accessible
+   * tant que le profil est incomplet.
+   *
+   * @returns { access_token, user } — nouveau JWT portant le rôle mis à jour
+   */
+  @Patch('complete-profile')
+  @UseGuards(JwtAuthGuard)
+  @SkipProfileCompletion()
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Set technical role and profession, unlock account',
+  })
+  @ApiResponse({ status: 200, description: 'Profile completed' })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async completeProfile(
+    @Request() req: JwtRequest,
+    @Body() dto: CompleteProfileDto,
+  ) {
+    return this.authService.completeProfile(req.user.userId, dto);
   }
 }

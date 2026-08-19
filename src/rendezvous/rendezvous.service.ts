@@ -10,6 +10,7 @@ import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { AppointmentDecision } from './dto/update-appointment-status.dto';
 import { User } from '../users/entities/user.entity';
 import { AuthenticatedUser, isAdmin } from '../common/types/jwt-request';
+import { isProviderRole } from '../users/role.util';
 import { NotificationsService } from '../notifications/notifications.service';
 
 /**
@@ -33,9 +34,9 @@ export class RendezvousService {
   /**
    * Crée un rendez-vous après avoir résolu les IDs student et teacher.
    *
-   * Un étudiant ne peut réserver que pour lui-même et un enseignant ne peut
+   * Un client ne peut réserver que pour lui-même et un prestataire ne peut
    * créer un rendez-vous que sur son propre agenda ; l'administrateur n'est
-   * pas restreint. L'enseignant concerné reçoit une notification.
+   * pas restreint. Le prestataire concerné reçoit une notification.
    *
    * @throws NotFoundException si l'un des deux utilisateurs est introuvable.
    * @throws ForbiddenException si l'auteur n'est pas partie prenante du rendez-vous.
@@ -60,7 +61,15 @@ export class RendezvousService {
     ]);
 
     if (!student || !teacher) {
-      throw new NotFoundException('Étudiant ou enseignant introuvable');
+      throw new NotFoundException('Client ou prestataire introuvable');
+    }
+
+    // Le côté `teacher` du rendez-vous porte le prestataire : un compte qui ne
+    // publie pas de créneaux ne peut pas y être placé.
+    if (!isProviderRole(teacher.role)) {
+      throw new ForbiddenException(
+        'Le professionnel choisi ne propose pas de rendez-vous',
+      );
     }
 
     const appointment = this.appointmentRepository.create({
@@ -137,7 +146,7 @@ export class RendezvousService {
   /**
    * Confirme ou annule un rendez-vous et notifie l'autre participant.
    *
-   * La confirmation est réservée à l'enseignant concerné (ou à un admin) ;
+   * La confirmation est réservée au prestataire concerné (ou à un admin) ;
    * l'annulation est ouverte aux deux participants.
    *
    * @throws ForbiddenException si l'utilisateur n'a pas le droit d'appliquer ce statut.
@@ -149,14 +158,14 @@ export class RendezvousService {
   ): Promise<Appointment> {
     const appointment = await this.findOneForUser(id, actor);
 
-    const isTeacher = appointment.teacher.id === actor.userId;
+    const isProviderOfAppointment = appointment.teacher.id === actor.userId;
     if (
       status === AppointmentStatus.CONFIRMED &&
-      !isTeacher &&
+      !isProviderOfAppointment &&
       !isAdmin(actor)
     ) {
       throw new ForbiddenException(
-        "Seul l'enseignant peut confirmer ce rendez-vous",
+        'Seul le prestataire peut confirmer ce rendez-vous',
       );
     }
 

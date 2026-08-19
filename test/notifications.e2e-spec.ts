@@ -11,6 +11,11 @@ interface TokenResponse {
   access_token: string;
 }
 
+interface RegisterResponse {
+  access_token: string;
+  user: IdResponse;
+}
+
 interface NotificationResponse {
   id: number;
   read: boolean;
@@ -32,10 +37,16 @@ describe('NotificationsController (e2e)', () => {
 
   const createUser = async (email: string, role: string): Promise<number> => {
     const response = await request(app.getHttpServer() as Server)
-      .post('/users')
-      .send({ email, password: 'test123', firstName: 'E2E', role })
+      .post('/auth/register')
+      .send({
+        email,
+        password: 'test123',
+        firstName: 'E2E',
+        role,
+        profession: role === 'prestataire' ? 'Coiffeur' : 'Particulier',
+      })
       .expect(201);
-    return (response.body as IdResponse).id;
+    return (response.body as RegisterResponse).user.id;
   };
 
   const login = async (email: string): Promise<string> => {
@@ -49,8 +60,8 @@ describe('NotificationsController (e2e)', () => {
   beforeAll(async () => {
     app = await createTestApp();
 
-    teacherId = await createUser(teacherEmail, 'teacher');
-    studentId = await createUser(studentEmail, 'student');
+    teacherId = await createUser(teacherEmail, 'prestataire');
+    studentId = await createUser(studentEmail, 'client');
     teacherToken = await login(teacherEmail);
     studentToken = await login(studentEmail);
 
