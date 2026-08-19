@@ -9,8 +9,8 @@ import {
 
 /** Canal de livraison d'une notification. */
 export enum NotificationChannel {
-  EMAIL  = 'email',  // Envoyée par email via SMTP
-  SMS    = 'sms',    // Réservé à un usage futur
+  EMAIL = 'email', // Envoyée par email via SMTP
+  SMS = 'sms', // Réservé à un usage futur
   SYSTEM = 'system', // Notification in-app uniquement
 }
 

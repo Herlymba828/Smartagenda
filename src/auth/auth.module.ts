@@ -26,12 +26,14 @@ import { AuthController } from './auth.controller';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         // Erreur au boot si JWT_SECRET est absent — pas de fallback non sécurisé
-        secret: configService.get<string>('JWT_SECRET') || (() => {
-          throw new Error('JWT_SECRET environment variable is required');
-        })(),
+        secret:
+          configService.get<string>('JWT_SECRET') ||
+          (() => {
+            throw new Error('JWT_SECRET environment variable is required');
+          })(),
         signOptions: {
           // Durée de vie configurable via JWT_EXPIRATION (ex: '8h', '7d')
-          expiresIn: (configService.get<string>('JWT_EXPIRATION', '8h')) as '8h',
+          expiresIn: configService.get<string>('JWT_EXPIRATION', '8h') as '8h',
         },
       }),
     }),

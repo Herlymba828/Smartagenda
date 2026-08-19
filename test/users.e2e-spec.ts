@@ -1,7 +1,16 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
+import { Server } from 'http';
 import request from 'supertest';
 import { AppModule } from './../src/app.module';
+
+interface IdResponse {
+  id: number;
+}
+
+interface LoginResponse {
+  access_token: string;
+}
 
 describe('UsersController (e2e)', () => {
   let app: INestApplication;
@@ -17,7 +26,7 @@ describe('UsersController (e2e)', () => {
     await app.init();
 
     // Create a test user and authenticate
-    const createUserResponse = await request(app.getHttpServer())
+    const createUserResponse = await request(app.getHttpServer() as Server)
       .post('/users')
       .send({
         email: 'e2e-test@example.com',
@@ -28,10 +37,10 @@ describe('UsersController (e2e)', () => {
       })
       .expect(201);
 
-    testUserId = createUserResponse.body.id;
+    testUserId = (createUserResponse.body as IdResponse).id;
 
     // Login to get token
-    const loginResponse = await request(app.getHttpServer())
+    const loginResponse = await request(app.getHttpServer() as Server)
       .post('/auth/login')
       .send({
         email: 'e2e-test@example.com',
@@ -39,13 +48,13 @@ describe('UsersController (e2e)', () => {
       })
       .expect(200);
 
-    authToken = loginResponse.body.access_token;
+    authToken = (loginResponse.body as LoginResponse).access_token;
   });
 
   afterAll(async () => {
     // Cleanup test user
     if (testUserId) {
-      await request(app.getHttpServer())
+      await request(app.getHttpServer() as Server)
         .delete(`/users/${testUserId}`)
         .set('Authorization', `Bearer ${authToken}`);
     }
@@ -54,7 +63,7 @@ describe('UsersController (e2e)', () => {
 
   describe('POST /users', () => {
     it('should create a new user', () => {
-      return request(app.getHttpServer())
+      return request(app.getHttpServer() as Server)
         .post('/users')
         .send({
           email: 'newuser@example.com',
@@ -72,7 +81,7 @@ describe('UsersController (e2e)', () => {
     });
 
     it('should fail with invalid email', () => {
-      return request(app.getHttpServer())
+      return request(app.getHttpServer() as Server)
         .post('/users')
         .send({
           email: 'invalid-email',
@@ -84,7 +93,7 @@ describe('UsersController (e2e)', () => {
     });
 
     it('should fail with short password', () => {
-      return request(app.getHttpServer())
+      return request(app.getHttpServer() as Server)
         .post('/users')
         .send({
           email: 'test@example.com',
@@ -98,7 +107,7 @@ describe('UsersController (e2e)', () => {
 
   describe('GET /users/me', () => {
     it('should return current user profile with valid token', () => {
-      return request(app.getHttpServer())
+      return request(app.getHttpServer() as Server)
         .get('/users/me')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200)
@@ -110,13 +119,13 @@ describe('UsersController (e2e)', () => {
     });
 
     it('should fail without token', () => {
-      return request(app.getHttpServer())
+      return request(app.getHttpServer() as Server)
         .get('/users/me')
         .expect(401);
     });
 
     it('should fail with invalid token', () => {
-      return request(app.getHttpServer())
+      return request(app.getHttpServer() as Server)
         .get('/users/me')
         .set('Authorization', 'Bearer invalid-token')
         .expect(401);
@@ -125,19 +134,20 @@ describe('UsersController (e2e)', () => {
 
   describe('GET /users', () => {
     it('should return all users with valid token', () => {
-      return request(app.getHttpServer())
+      return request(app.getHttpServer() as Server)
         .get('/users')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200)
         .expect((res) => {
-          expect(Array.isArray(res.body)).toBe(true);
-          expect(res.body.length).toBeGreaterThan(0);
-          expect(res.body[0]).not.toHaveProperty('password');
+          const body = res.body as unknown[];
+          expect(Array.isArray(body)).toBe(true);
+          expect(body.length).toBeGreaterThan(0);
+          expect(body[0]).not.toHaveProperty('password');
         });
     });
 
     it('should fail without token', () => {
-      return request(app.getHttpServer())
+      return request(app.getHttpServer() as Server)
         .get('/users')
         .expect(401);
     });

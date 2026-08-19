@@ -23,7 +23,10 @@ export class DisponibilitesController {
   /** POST /availabilities — crée un créneau de disponibilité. */
   @Post()
   @ApiOperation({ summary: 'Create a new availability' })
-  @ApiResponse({ status: 201, description: 'Availability created successfully' })
+  @ApiResponse({
+    status: 201,
+    description: 'Availability created successfully',
+  })
   @ApiResponse({ status: 400, description: 'Bad request' })
   create(@Body() dto: CreateAvailabilityDto) {
     return this.disponibilitesService.create(dto);

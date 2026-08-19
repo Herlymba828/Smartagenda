@@ -1,11 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
+import { Server } from 'http';
 import request from 'supertest';
 import { AppModule } from './../src/app.module';
 
+interface IdResponse {
+  id: number;
+}
+
 describe('AppointmentsController (e2e)', () => {
   let app: INestApplication;
-  let authToken: string;
   let testUserId: number;
   let testAppointmentId: number;
 
@@ -18,7 +22,7 @@ describe('AppointmentsController (e2e)', () => {
     await app.init();
 
     // Create test users
-    const studentResponse = await request(app.getHttpServer())
+    const studentResponse = await request(app.getHttpServer() as Server)
       .post('/users')
       .send({
         email: 'e2e-student@example.com',
@@ -28,7 +32,7 @@ describe('AppointmentsController (e2e)', () => {
       })
       .expect(201);
 
-    const teacherResponse = await request(app.getHttpServer())
+    const teacherResponse = await request(app.getHttpServer() as Server)
       .post('/users')
       .send({
         email: 'e2e-teacher@example.com',
@@ -38,11 +42,10 @@ describe('AppointmentsController (e2e)', () => {
       })
       .expect(201);
 
-    testUserId = studentResponse.body.id;
-    const teacherId = teacherResponse.body.id;
+    testUserId = (studentResponse.body as IdResponse).id;
+    const teacherId = (teacherResponse.body as IdResponse).id;
 
-    // Login to get token
-    const loginResponse = await request(app.getHttpServer())
+    await request(app.getHttpServer() as Server)
       .post('/auth/login')
       .send({
         email: 'e2e-student@example.com',
@@ -50,10 +53,8 @@ describe('AppointmentsController (e2e)', () => {
       })
       .expect(200);
 
-    authToken = loginResponse.body.access_token;
-
     // Create a test appointment
-    const appointmentResponse = await request(app.getHttpServer())
+    const appointmentResponse = await request(app.getHttpServer() as Server)
       .post('/appointments')
       .send({
         studentId: testUserId,
@@ -66,21 +67,22 @@ describe('AppointmentsController (e2e)', () => {
       })
       .expect(201);
 
-    testAppointmentId = appointmentResponse.body.id;
+    testAppointmentId = (appointmentResponse.body as IdResponse).id;
   });
 
   afterAll(async () => {
     // Cleanup
     if (testAppointmentId) {
-      await request(app.getHttpServer())
-        .delete(`/appointments/${testAppointmentId}`);
+      await request(app.getHttpServer() as Server).delete(
+        `/appointments/${testAppointmentId}`,
+      );
     }
     await app.close();
   });
 
   describe('POST /appointments', () => {
     it('should create a new appointment', () => {
-      return request(app.getHttpServer())
+      return request(app.getHttpServer() as Server)
         .post('/appointments')
         .send({
           studentId: testUserId,
@@ -99,7 +101,7 @@ describe('AppointmentsController (e2e)', () => {
     });
 
     it('should fail with invalid date format', () => {
-      return request(app.getHttpServer())
+      return request(app.getHttpServer() as Server)
         .post('/appointments')
         .send({
           studentId: testUserId,
@@ -112,7 +114,7 @@ describe('AppointmentsController (e2e)', () => {
     });
 
     it('should fail with missing required fields', () => {
-      return request(app.getHttpServer())
+      return request(app.getHttpServer() as Server)
         .post('/appointments')
         .send({
           studentId: testUserId,
@@ -124,19 +126,20 @@ describe('AppointmentsController (e2e)', () => {
 
   describe('GET /appointments', () => {
     it('should return all appointments', () => {
-      return request(app.getHttpServer())
+      return request(app.getHttpServer() as Server)
         .get('/appointments')
         .expect(200)
         .expect((res) => {
-          expect(Array.isArray(res.body)).toBe(true);
-          expect(res.body.length).toBeGreaterThan(0);
+          const body = res.body as unknown[];
+          expect(Array.isArray(body)).toBe(true);
+          expect(body.length).toBeGreaterThan(0);
         });
     });
   });
 
   describe('GET /appointments/:id', () => {
     it('should return appointment by ID', () => {
-      return request(app.getHttpServer())
+      return request(app.getHttpServer() as Server)
         .get(`/appointments/${testAppointmentId}`)
         .expect(200)
         .expect((res) => {
@@ -146,7 +149,7 @@ describe('AppointmentsController (e2e)', () => {
     });
 
     it('should return 404 for non-existent appointment', () => {
-      return request(app.getHttpServer())
+      return request(app.getHttpServer() as Server)
         .get('/appointments/99999')
         .expect(404);
     });
@@ -154,7 +157,7 @@ describe('AppointmentsController (e2e)', () => {
 
   describe('DELETE /appointments/:id', () => {
     it('should cancel appointment', () => {
-      return request(app.getHttpServer())
+      return request(app.getHttpServer() as Server)
         .delete(`/appointments/${testAppointmentId}`)
         .expect(200)
         .expect((res) => {

@@ -27,12 +27,18 @@ export class CreateAppointmentDto {
   @IsNumber()
   teacherId!: number;
 
-  @ApiProperty({ example: '2026-08-10T14:00:00.000Z', description: 'Appointment start time (ISO 8601)' })
+  @ApiProperty({
+    example: '2026-08-10T14:00:00.000Z',
+    description: 'Appointment start time (ISO 8601)',
+  })
   @IsNotEmpty()
   @IsDateString()
   startAt!: string;
 
-  @ApiProperty({ example: '2026-08-10T14:30:00.000Z', description: 'Appointment end time (ISO 8601)' })
+  @ApiProperty({
+    example: '2026-08-10T14:30:00.000Z',
+    description: 'Appointment end time (ISO 8601)',
+  })
   @IsNotEmpty()
   @IsDateString()
   endAt!: string;
@@ -41,7 +47,10 @@ export class CreateAppointmentDto {
   @IsString()
   subject!: string;
 
-  @ApiPropertyOptional({ example: 'Bring calculus textbook', description: 'Additional details' })
+  @ApiPropertyOptional({
+    example: 'Bring calculus textbook',
+    description: 'Additional details',
+  })
   @IsOptional()
   @IsString()
   description?: string;
@@ -52,7 +61,10 @@ export class CreateAppointmentDto {
   isVirtual?: boolean;
 
   /** Optionnel : le statut par défaut est 'pending' si non fourni. */
-  @ApiPropertyOptional({ enum: AppointmentStatus, example: AppointmentStatus.PENDING })
+  @ApiPropertyOptional({
+    enum: AppointmentStatus,
+    example: AppointmentStatus.PENDING,
+  })
   @IsOptional()
   @IsEnum(AppointmentStatus)
   status?: AppointmentStatus;

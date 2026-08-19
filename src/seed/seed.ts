@@ -3,8 +3,14 @@ import { AppModule } from '../app.module';
 import { DataSource } from 'typeorm';
 import { User, UserRole } from '../users/entities/user.entity';
 import { Availability } from '../disponibilites/entities/availability.entity';
-import { Appointment, AppointmentStatus } from '../rendezvous/entities/appointment.entity';
-import { Notification, NotificationChannel } from '../notifications/entities/notification.entity';
+import {
+  Appointment,
+  AppointmentStatus,
+} from '../rendezvous/entities/appointment.entity';
+import {
+  Notification,
+  NotificationChannel,
+} from '../notifications/entities/notification.entity';
 import { hashPassword } from '../utils/hash.util';
 
 async function seed() {
@@ -144,7 +150,8 @@ async function seed() {
     user: student1,
     channel: NotificationChannel.EMAIL,
     title: 'Appointment Confirmed',
-    message: 'Your calculus tutoring session with Marie Dupont has been confirmed.',
+    message:
+      'Your calculus tutoring session with Marie Dupont has been confirmed.',
     read: false,
   });
   await notificationRepository.save(notification1);

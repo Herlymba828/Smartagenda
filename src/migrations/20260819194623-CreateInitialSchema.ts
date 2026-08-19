@@ -65,11 +65,21 @@ export class CreateInitialSchema1724097983000 implements MigrationInterface {
     `);
 
     // Create indexes
-    await queryRunner.query(`CREATE INDEX "idx_availabilities_owner" ON "availabilities"("ownerId")`);
-    await queryRunner.query(`CREATE INDEX "idx_appointments_student" ON "appointments"("studentId")`);
-    await queryRunner.query(`CREATE INDEX "idx_appointments_teacher" ON "appointments"("teacherId")`);
-    await queryRunner.query(`CREATE INDEX "idx_appointments_isVirtual" ON "appointments"("isVirtual")`);
-    await queryRunner.query(`CREATE INDEX "idx_notifications_user" ON "notifications"("userId")`);
+    await queryRunner.query(
+      `CREATE INDEX "idx_availabilities_owner" ON "availabilities"("ownerId")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "idx_appointments_student" ON "appointments"("studentId")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "idx_appointments_teacher" ON "appointments"("teacherId")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "idx_appointments_isVirtual" ON "appointments"("isVirtual")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX "idx_notifications_user" ON "notifications"("userId")`,
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

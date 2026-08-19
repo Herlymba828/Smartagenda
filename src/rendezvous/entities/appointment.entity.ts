@@ -11,7 +11,7 @@ import {
 
 /** Statuts possibles d'un rendez-vous tout au long de son cycle de vie. */
 export enum AppointmentStatus {
-  PENDING   = 'pending',   // En attente de confirmation par l'enseignant
+  PENDING = 'pending', // En attente de confirmation par l'enseignant
   CONFIRMED = 'confirmed', // Confirmé
   CANCELLED = 'cancelled', // Annulé (par l'étudiant ou l'enseignant)
 }

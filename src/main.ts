@@ -28,9 +28,9 @@ async function bootstrap() {
   // rejet des propriétés inconnues, et transformation automatique des types
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true,           // Supprime les propriétés non listées dans le DTO
+      whitelist: true, // Supprime les propriétés non listées dans le DTO
       forbidNonWhitelisted: true, // Retourne 400 si des propriétés inconnues sont envoyées
-      transform: true,            // Convertit automatiquement les types (ex: string → number)
+      transform: true, // Convertit automatiquement les types (ex: string → number)
     }),
   );
 
@@ -48,7 +48,9 @@ async function bootstrap() {
   // Configuration Swagger — documentation interactive disponible sur /api/docs
   const config = new DocumentBuilder()
     .setTitle('SmartAgenda API')
-    .setDescription('API for SmartAgenda - Academic appointment scheduling system')
+    .setDescription(
+      'API for SmartAgenda - Academic appointment scheduling system',
+    )
     .setVersion('1.0')
     .addTag('auth', 'Authentication endpoints')
     .addTag('users', 'User management')
@@ -64,7 +66,9 @@ async function bootstrap() {
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
   logger.log(`Application is running on: http://localhost:${port}`);
-  logger.log(`Swagger documentation available at: http://localhost:${port}/api/docs`);
+  logger.log(
+    `Swagger documentation available at: http://localhost:${port}/api/docs`,
+  );
 }
 
 void bootstrap();

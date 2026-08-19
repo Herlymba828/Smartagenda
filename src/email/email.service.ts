@@ -27,9 +27,9 @@ export class EmailService {
    * Appelé une seule fois au démarrage via le constructeur.
    */
   private initializeTransporter() {
-    const smtpHost     = this.configService.get<string>('SMTP_HOST');
-    const smtpPort     = this.configService.get<number>('SMTP_PORT');
-    const smtpUser     = this.configService.get<string>('SMTP_USER');
+    const smtpHost = this.configService.get<string>('SMTP_HOST');
+    const smtpPort = this.configService.get<number>('SMTP_PORT');
+    const smtpUser = this.configService.get<string>('SMTP_USER');
     const smtpPassword = this.configService.get<string>('SMTP_PASSWORD');
 
     if (smtpHost && smtpUser && smtpPassword) {
@@ -48,10 +48,18 @@ export class EmailService {
       // Mode développement : mock qui logue dans la console
       this.logger.warn('Email service not configured - running in mock mode');
       this.transporter = {
-        sendMail: async (options: nodemailer.SendMailOptions) => {
-          this.logger.log(`[MOCK EMAIL] To: ${options.to}, Subject: ${options.subject}`);
-          this.logger.log(`[MOCK EMAIL] Content: ${options.text}`);
-          return { messageId: 'mock-message-id' } as nodemailer.SentMessageInfo;
+        sendMail: (options: nodemailer.SendMailOptions) => {
+          this.logger.log(
+            `[MOCK EMAIL] To: ${JSON.stringify(options.to)}, Subject: ${String(options.subject)}`,
+          );
+          const content =
+            typeof options.text === 'string'
+              ? options.text
+              : JSON.stringify(options.text);
+          this.logger.log(`[MOCK EMAIL] Content: ${content}`);
+          return Promise.resolve({
+            messageId: 'mock-message-id',
+          } as nodemailer.SentMessageInfo);
         },
       } as nodemailer.Transporter;
     }
@@ -66,8 +74,16 @@ export class EmailService {
    * @param html    - Corps en HTML optionnel.
    * @throws Propage l'erreur Nodemailer si l'envoi échoue.
    */
-  async sendEmail(to: string, subject: string, text: string, html?: string): Promise<void> {
-    const from = this.configService.get<string>('SMTP_FROM', 'noreply@smartagenda.com');
+  async sendEmail(
+    to: string,
+    subject: string,
+    text: string,
+    html?: string,
+  ): Promise<void> {
+    const from = this.configService.get<string>(
+      'SMTP_FROM',
+      'noreply@smartagenda.com',
+    );
 
     try {
       await this.transporter.sendMail({ from, to, subject, text, html });
@@ -152,7 +168,12 @@ SmartAgenda Team
   async sendNewAppointmentRequest(
     email: string,
     userName: string,
-    appointmentDetails: { studentName: string; subject: string; date: string; time: string },
+    appointmentDetails: {
+      studentName: string;
+      subject: string;
+      date: string;
+      time: string;
+    },
   ): Promise<void> {
     const subject = 'New Appointment Request - SmartAgenda';
     const text = `

@@ -1,7 +1,10 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Notification, NotificationChannel } from './entities/notification.entity';
+import {
+  Notification,
+  NotificationChannel,
+} from './entities/notification.entity';
 import { EmailService } from '../email/email.service';
 
 /**
@@ -36,14 +39,19 @@ export class NotificationsService {
     const savedNotification = await this.notificationRepository.save(entity);
 
     // Envoi email non-bloquant — erreur loggée mais ignorée
-    if (notification.channel === NotificationChannel.EMAIL && notification.user) {
+    if (
+      notification.channel === NotificationChannel.EMAIL &&
+      notification.user
+    ) {
       try {
         await this.emailService.sendEmail(
           notification.user.email,
           notification.title || 'Notification',
           notification.message || '',
         );
-        this.logger.log(`Email notification sent to ${notification.user.email}`);
+        this.logger.log(
+          `Email notification sent to ${notification.user.email}`,
+        );
       } catch (error) {
         this.logger.error(`Failed to send email notification:`, error);
       }
@@ -92,10 +100,17 @@ export class NotificationsService {
     appointmentDetails: { subject: string; date: string; time: string },
   ): Promise<void> {
     try {
-      await this.emailService.sendAppointmentConfirmation(userEmail, userName, appointmentDetails);
+      await this.emailService.sendAppointmentConfirmation(
+        userEmail,
+        userName,
+        appointmentDetails,
+      );
       this.logger.log(`Appointment confirmation email sent to ${userEmail}`);
     } catch (error) {
-      this.logger.error(`Failed to send appointment confirmation email:`, error);
+      this.logger.error(
+        `Failed to send appointment confirmation email:`,
+        error,
+      );
     }
   }
 
@@ -109,10 +124,17 @@ export class NotificationsService {
     appointmentDetails: { subject: string; date: string },
   ): Promise<void> {
     try {
-      await this.emailService.sendAppointmentCancellation(userEmail, userName, appointmentDetails);
+      await this.emailService.sendAppointmentCancellation(
+        userEmail,
+        userName,
+        appointmentDetails,
+      );
       this.logger.log(`Appointment cancellation email sent to ${userEmail}`);
     } catch (error) {
-      this.logger.error(`Failed to send appointment cancellation email:`, error);
+      this.logger.error(
+        `Failed to send appointment cancellation email:`,
+        error,
+      );
     }
   }
 
@@ -123,10 +145,19 @@ export class NotificationsService {
   async sendNewAppointmentRequest(
     teacherEmail: string,
     teacherName: string,
-    appointmentDetails: { studentName: string; subject: string; date: string; time: string },
+    appointmentDetails: {
+      studentName: string;
+      subject: string;
+      date: string;
+      time: string;
+    },
   ): Promise<void> {
     try {
-      await this.emailService.sendNewAppointmentRequest(teacherEmail, teacherName, appointmentDetails);
+      await this.emailService.sendNewAppointmentRequest(
+        teacherEmail,
+        teacherName,
+        appointmentDetails,
+      );
       this.logger.log(`New appointment request email sent to ${teacherEmail}`);
     } catch (error) {
       this.logger.error(`Failed to send new appointment request email:`, error);

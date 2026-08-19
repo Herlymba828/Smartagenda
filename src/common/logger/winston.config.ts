@@ -1,4 +1,5 @@
 import * as winston from 'winston';
+import { humanReadableFormat } from './log-format';
 
 export const winstonConfig = {
   level: process.env.LOG_LEVEL || 'info',
@@ -13,13 +14,7 @@ export const winstonConfig = {
     new winston.transports.Console({
       format: winston.format.combine(
         winston.format.colorize(),
-        winston.format.printf(({ timestamp, level, message, context, ...metadata }) => {
-          let msg = `${timestamp} [${context || 'Application'}] ${level}: ${message}`;
-          if (Object.keys(metadata).length > 0) {
-            msg += ` ${JSON.stringify(metadata)}`;
-          }
-          return msg;
-        }),
+        humanReadableFormat(),
       ),
     }),
     new winston.transports.File({

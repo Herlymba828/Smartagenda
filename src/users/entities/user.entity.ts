@@ -18,7 +18,7 @@ import {
 export enum UserRole {
   STUDENT = 'student', // Peut créer des rendez-vous et consulter les disponibilités
   TEACHER = 'teacher', // Peut publier des disponibilités et gérer les demandes de RDV
-  ADMIN   = 'admin',   // Accès complet à la gestion des utilisateurs
+  ADMIN = 'admin', // Accès complet à la gestion des utilisateurs
 }
 
 /**

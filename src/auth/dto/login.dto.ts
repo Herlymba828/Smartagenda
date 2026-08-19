@@ -8,11 +8,18 @@ import { ApiProperty } from '@nestjs/swagger';
  * Les propriétés non déclarées ici sont rejetées (forbidNonWhitelisted: true).
  */
 export class LoginDto {
-  @ApiProperty({ example: 'user@example.com', description: 'User email address' })
+  @ApiProperty({
+    example: 'user@example.com',
+    description: 'User email address',
+  })
   @IsEmail()
   email!: string;
 
-  @ApiProperty({ example: 'password123', minLength: 6, description: 'User password' })
+  @ApiProperty({
+    example: 'password123',
+    minLength: 6,
+    description: 'User password',
+  })
   @IsString()
   @MinLength(6)
   @IsNotEmpty()

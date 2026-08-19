@@ -30,12 +30,16 @@ export class UsersService {
    * Le hash est calculé de manière asynchrone (scrypt) pour ne pas bloquer l'event loop.
    */
   async create(dto: CreateUserDto): Promise<User> {
-    this.logger.log(`Creating user account email=${dto.email} role=${dto.role}`);
+    this.logger.log(
+      `Creating user account email=${dto.email} role=${dto.role}`,
+    );
 
     try {
       const existingUser = await this.findOneByEmail(dto.email);
       if (existingUser) {
-        this.logger.warn(`User account creation rejected: email already exists email=${dto.email}`);
+        this.logger.warn(
+          `User account creation rejected: email already exists email=${dto.email}`,
+        );
         throw new ConflictException('Cette adresse email est déjà utilisée.');
       }
 
@@ -44,14 +48,18 @@ export class UsersService {
         password: await hashPassword(dto.password),
       });
       const savedUser = await this.usersRepository.save(user);
-      this.logger.log(`User account created id=${savedUser.id} email=${savedUser.email}`);
+      this.logger.log(
+        `User account created id=${savedUser.id} email=${savedUser.email}`,
+      );
       return savedUser;
     } catch (error) {
       if (error instanceof ConflictException) {
         throw error;
       }
       const message = error instanceof Error ? error.message : String(error);
-      this.logger.error(`User account creation failed email=${dto.email}: ${message}`);
+      this.logger.error(
+        `User account creation failed email=${dto.email}: ${message}`,
+      );
       throw error;
     }
   }
