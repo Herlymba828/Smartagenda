@@ -18,17 +18,26 @@ export class CreateAvailabilityDto {
   @IsNumber()
   ownerId!: number;
 
-  @ApiProperty({ example: '2026-08-07T09:00:00.000Z', description: 'Availability start time (ISO 8601)' })
+  @ApiProperty({
+    example: '2026-08-07T09:00:00.000Z',
+    description: 'Availability start time (ISO 8601)',
+  })
   @IsNotEmpty()
   @IsDateString()
   startAt!: string;
 
-  @ApiProperty({ example: '2026-08-07T10:00:00.000Z', description: 'Availability end time (ISO 8601)' })
+  @ApiProperty({
+    example: '2026-08-07T10:00:00.000Z',
+    description: 'Availability end time (ISO 8601)',
+  })
   @IsNotEmpty()
   @IsDateString()
   endAt!: string;
 
-  @ApiPropertyOptional({ example: 'Office Hours', description: 'Availability title' })
+  @ApiPropertyOptional({
+    example: 'Office Hours',
+    description: 'Availability title',
+  })
   @IsOptional()
   @IsString()
   title?: string;

@@ -5,7 +5,7 @@ import { ConfigService } from '@nestjs/config';
 
 /** Structure du payload contenu dans le token JWT signé. */
 interface JwtPayload {
-  sub: number;    // ID de l'utilisateur (subject)
+  sub: number; // ID de l'utilisateur (subject)
   email: string;
   role: string;
 }
@@ -30,9 +30,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       // Les tokens expirés sont rejetés (renvoie 401)
       ignoreExpiration: false,
       // Clé secrète obligatoire — erreur au démarrage si absente
-      secretOrKey: configService.get<string>('JWT_SECRET') || (() => {
-        throw new Error('JWT_SECRET environment variable is required');
-      })(),
+      secretOrKey:
+        configService.get<string>('JWT_SECRET') ||
+        (() => {
+          throw new Error('JWT_SECRET environment variable is required');
+        })(),
     });
   }
 

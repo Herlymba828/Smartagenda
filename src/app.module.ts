@@ -50,22 +50,22 @@ import { EmailModule } from './email/email.module';
         username: configService.get<string>('DB_USER', 'postgres'),
         password: configService.get<string>('DB_PASSWORD', 'postgres'),
         database: configService.get<string>('DB_NAME', 'smartagenda'),
-        synchronize: false,         // Toujours false en production — utiliser les migrations
+        synchronize: false, // Toujours false en production — utiliser les migrations
         logging: configService.get<string>('NODE_ENV') === 'development',
-        autoLoadEntities: true,     // Charge automatiquement les entités enregistrées via forFeature()
+        autoLoadEntities: true, // Charge automatiquement les entités enregistrées via forFeature()
         migrations: ['dist/migrations/*.js'],
         entities: ['dist/**/*.entity.js'],
-        migrationsRun: false,       // Migrations lancées manuellement via npm run migration:run
+        migrationsRun: false, // Migrations lancées manuellement via npm run migration:run
       }),
     }),
 
     // Modules fonctionnels
-    EmailModule,          // Service d'envoi d'emails (SMTP ou mock en développement)
-    UsersModule,          // Gestion des utilisateurs
-    AuthModule,           // Authentification JWT
-    RendezvousModule,     // Rendez-vous (appointments)
+    EmailModule, // Service d'envoi d'emails (SMTP ou mock en développement)
+    UsersModule, // Gestion des utilisateurs
+    AuthModule, // Authentification JWT
+    RendezvousModule, // Rendez-vous (appointments)
     DisponibilitesModule, // Disponibilités des enseignants
-    NotificationsModule,  // Notifications in-app et emails
+    NotificationsModule, // Notifications in-app et emails
   ],
   controllers: [AppController],
   providers: [

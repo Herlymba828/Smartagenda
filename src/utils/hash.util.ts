@@ -35,7 +35,10 @@ export async function hashPassword(password: string): Promise<string> {
  * @param storedHash - Hash au format `salt.derivedKey` stocké en base.
  * @returns `true` si le mot de passe correspond, `false` sinon.
  */
-export async function verifyPassword(password: string, storedHash: string): Promise<boolean> {
+export async function verifyPassword(
+  password: string,
+  storedHash: string,
+): Promise<boolean> {
   const [salt, key] = storedHash.split('.');
 
   // Hash invalide ou malformé

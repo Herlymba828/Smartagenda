@@ -30,9 +30,9 @@ export class HttpExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(HttpExceptionFilter.name);
 
   catch(exception: unknown, host: ArgumentsHost) {
-    const ctx      = host.switchToHttp();
+    const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
-    const request  = ctx.getRequest<Request>();
+    const request = ctx.getRequest<Request>();
 
     // Détermine le code HTTP : utilise le code de l'HttpException ou 500 par défaut
     const status =
@@ -51,7 +51,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
         typeof exceptionResponse === 'object' &&
         'message' in exceptionResponse
       ) {
-        const responseMessage = (exceptionResponse as { message: unknown }).message;
+        const responseMessage = exceptionResponse.message;
         message = Array.isArray(responseMessage)
           ? responseMessage.join(' ')
           : String(responseMessage);
@@ -72,7 +72,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
       }),
     };
 
-    const technicalMessage = exception instanceof Error ? exception.message : String(exception);
+    const technicalMessage =
+      exception instanceof Error ? exception.message : String(exception);
     const stack = exception instanceof Error ? exception.stack : undefined;
     this.logger.error(
       `${request.method} ${request.url} -> ${status}: ${technicalMessage}`,

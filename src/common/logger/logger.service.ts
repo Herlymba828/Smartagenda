@@ -1,5 +1,10 @@
-import { Injectable, LoggerService as NestLoggerService, Scope } from '@nestjs/common';
+import {
+  Injectable,
+  LoggerService as NestLoggerService,
+  Scope,
+} from '@nestjs/common';
 import * as Winston from 'winston';
+import { humanReadableFormat } from './log-format';
 
 /**
  * Service de logging Winston — implémente l'interface NestLoggerService.
@@ -23,7 +28,7 @@ export class LoggerService implements NestLoggerService {
   private readonly logger: Winston.Logger;
 
   constructor() {
-    const logLevel     = process.env.LOG_LEVEL || 'info';
+    const logLevel = process.env.LOG_LEVEL || 'info';
     const isDevelopment = process.env.NODE_ENV === 'development';
 
     const formats: Winston.Logform.Format[] = [
@@ -35,16 +40,7 @@ export class LoggerService implements NestLoggerService {
 
     // Format lisible en développement
     if (isDevelopment) {
-      formats.push(
-        Winston.format.colorize(),
-        Winston.format.printf(({ timestamp, level, message, context, ...metadata }) => {
-          let msg = `${timestamp} [${context || 'Application'}] ${level}: ${message}`;
-          if (Object.keys(metadata).length > 0) {
-            msg += ` ${JSON.stringify(metadata)}`;
-          }
-          return msg;
-        }),
-      );
+      formats.push(Winston.format.colorize(), humanReadableFormat());
     }
 
     this.logger = Winston.createLogger({

@@ -18,11 +18,18 @@ import { UserRole } from '../entities/user.entity';
  * pour empêcher la création de comptes admin sans authentification.
  */
 export class CreateUserDto {
-  @ApiProperty({ example: 'user@example.com', description: 'User email address' })
+  @ApiProperty({
+    example: 'user@example.com',
+    description: 'User email address',
+  })
   @IsEmail()
   email!: string;
 
-  @ApiProperty({ example: 'password123', minLength: 6, description: 'User password' })
+  @ApiProperty({
+    example: 'password123',
+    minLength: 6,
+    description: 'User password',
+  })
   @IsString()
   @MinLength(6)
   password!: string;
@@ -37,7 +44,11 @@ export class CreateUserDto {
   @IsOptional()
   lastName?: string;
 
-  @ApiProperty({ enum: UserRole, example: UserRole.STUDENT, description: 'User role' })
+  @ApiProperty({
+    enum: UserRole,
+    example: UserRole.STUDENT,
+    description: 'User role',
+  })
   @IsEnum(UserRole)
   role!: UserRole;
 }
