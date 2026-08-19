@@ -14,6 +14,30 @@ This document lists the available HTTP endpoints, request/response schemas, auth
 
 ## Authentication
 
+### POST /api/auth/register
+- Description: Public sign-up. Creates the account and returns a JWT so no extra login call is needed.
+- Rate limit: 5 registrations per hour per IP.
+- Request body (RegisterDto):
+
+```json
+{
+  "email": "test@example.com",
+  "password": "password123",
+  "firstName": "Jane",
+  "lastName": "Doe",        // optional
+  "role": "student"        // optional, "student" (default) or "teacher" — "admin" is rejected
+}
+```
+- Response (201):
+
+```json
+{
+  "access_token": "<JWT_TOKEN>",
+  "user": { "id": 1, "email": "test@example.com", "firstName": "Jane", "role": "student" }
+}
+```
+- Errors: 400 invalid body, 409 email already registered, 429 rate limit exceeded.
+
 ### POST /api/auth/login
 - Description: Exchange email/password for JWT access token.
 - Request body:

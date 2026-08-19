@@ -2,7 +2,8 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { verifyPassword } from '../utils/hash.util';
-import { User } from '../users/entities/user.entity';
+import { User, UserRole } from '../users/entities/user.entity';
+import { RegisterDto } from './dto/register.dto';
 
 /** Type utilitaire : utilisateur sans le champ password (qui est select:false). */
 type AuthenticatedUser = Omit<User, 'password'>;
@@ -65,5 +66,23 @@ export class AuthService {
     return {
       access_token: this.jwtService.sign(payload),
     };
+  }
+
+  /**
+   * Inscrit un nouvel utilisateur et le connecte immédiatement.
+   *
+   * Le rôle par défaut est `student` ; `admin` est refusé au niveau du DTO.
+   *
+   * @returns { access_token, user } — l'utilisateur créé sans son mot de passe
+   * @throws ConflictException si l'email est déjà utilisé
+   */
+  async register(dto: RegisterDto) {
+    const created = await this.usersService.create({
+      ...dto,
+      role: dto.role ?? UserRole.STUDENT,
+    });
+    const { password, ...user } = created;
+    void password;
+    return { ...this.login(user), user };
   }
 }
