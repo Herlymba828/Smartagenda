@@ -15,6 +15,7 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { ProfileCompletionGuard } from '../auth/profile-completion.guard';
 import type { JwtRequest } from '../common/types/jwt-request';
 import { CreateAvailabilityDto } from './dto/create-availability.dto';
 import { DisponibilitesService } from './disponibilites.service';
@@ -37,7 +38,7 @@ import { DisponibilitesService } from './disponibilites.service';
  */
 @ApiTags('availabilities')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, ProfileCompletionGuard)
 @Controller('availabilities')
 export class DisponibilitesController {
   constructor(private readonly disponibilitesService: DisponibilitesService) {}

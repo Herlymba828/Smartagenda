@@ -7,6 +7,11 @@ interface IdResponse {
   id: number;
 }
 
+interface RegisterResponse {
+  access_token: string;
+  user: IdResponse;
+}
+
 interface LoginResponse {
   access_token: string;
 }
@@ -26,17 +31,18 @@ describe('UsersController (e2e)', () => {
 
     // Create a test user and authenticate
     const createUserResponse = await request(app.getHttpServer() as Server)
-      .post('/users')
+      .post('/auth/register')
       .send({
         email: testEmail,
         password: 'test123',
         firstName: 'E2E',
         lastName: 'Test',
-        role: 'student',
+        role: 'client',
+        profession: 'Particulier',
       })
       .expect(201);
 
-    testUserId = (createUserResponse.body as IdResponse).id;
+    testUserId = (createUserResponse.body as RegisterResponse).user.id;
 
     // Login to get token
     const loginResponse = await request(app.getHttpServer() as Server)

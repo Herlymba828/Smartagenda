@@ -22,6 +22,7 @@ import { Request, Response } from 'express';
  *   path: string,
  *   method: string,
  *   message: string,
+ *   code?: string  (code métier fourni par l'exception, ex: PROFILE_INCOMPLETE)
  *   stack?: string  (uniquement en NODE_ENV=development)
  * }
  */
@@ -42,6 +43,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     // Preserve the detailed validation or conflict message from NestJS.
     let message = 'Internal server error';
+    let code: string | undefined;
     if (exception instanceof HttpException) {
       const exceptionResponse = exception.getResponse();
       if (typeof exceptionResponse === 'string') {
@@ -58,6 +60,17 @@ export class HttpExceptionFilter implements ExceptionFilter {
       } else {
         message = exception.message;
       }
+
+      // Code métier optionnel : permet au frontend de réagir spécifiquement
+      // (ex: PROFILE_INCOMPLETE → redirection vers l'écran de complétion).
+      if (
+        exceptionResponse &&
+        typeof exceptionResponse === 'object' &&
+        'code' in exceptionResponse &&
+        typeof exceptionResponse.code === 'string'
+      ) {
+        code = exceptionResponse.code;
+      }
     }
 
     const errorResponse = {
@@ -66,6 +79,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
       path: request.url,
       method: request.method,
       message,
+      ...(code && { code }),
       // Stack trace exposée uniquement en développement pour faciliter le debug
       ...(process.env.NODE_ENV === 'development' && {
         stack: exception instanceof Error ? exception.stack : undefined,

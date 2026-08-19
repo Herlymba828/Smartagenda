@@ -17,6 +17,7 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { ProfileCompletionGuard } from '../auth/profile-completion.guard';
 import type { JwtRequest } from '../common/types/jwt-request';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentStatusDto } from './dto/update-appointment-status.dto';
@@ -37,7 +38,7 @@ import { RendezvousService } from './rendezvous.service';
  */
 @ApiTags('appointments')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, ProfileCompletionGuard)
 @Controller('appointments')
 export class RendezvousController {
   constructor(private readonly rendezvousService: RendezvousService) {}

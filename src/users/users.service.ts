@@ -7,8 +7,12 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { hashPassword } from '../utils/hash.util';
+import { CompleteProfileDto } from '../auth/dto/complete-profile.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { User, UserRole } from './entities/user.entity';
+
+/** Création d'un compte : les champs de profil peuvent être fournis d'emblée. */
+type CreateUserInput = CreateUserDto & { profileCompleted?: boolean };
 
 /**
  * Service de gestion des utilisateurs.
@@ -29,7 +33,7 @@ export class UsersService {
    * Crée un nouvel utilisateur en hashant son mot de passe.
    * Le hash est calculé de manière asynchrone (scrypt) pour ne pas bloquer l'event loop.
    */
-  async create(dto: CreateUserDto): Promise<User> {
+  async create(dto: CreateUserInput): Promise<User> {
     this.logger.log(
       `Creating user account email=${dto.email} role=${dto.role}`,
     );
@@ -105,6 +109,19 @@ export class UsersService {
   }
 
   /**
+   * Renseigne le rôle technique et la profession, puis marque le profil complété.
+   *
+   * @throws NotFoundException si l'utilisateur n'existe pas.
+   */
+  async completeProfile(id: number, dto: CompleteProfileDto): Promise<User> {
+    const user = await this.findOneById(id);
+    user.role = dto.role;
+    user.profession = dto.profession;
+    user.profileCompleted = true;
+    return this.usersRepository.save(user);
+  }
+
+  /**
    * Crée automatiquement un compte administrateur au démarrage si ADMIN_EMAIL est défini.
    * Utilisé pour initialiser la plateforme en production sans passer par le seed.
    * Idempotent : ne crée le compte que s'il n'existe pas encore.
@@ -121,6 +138,8 @@ export class UsersService {
         password: await hashPassword(process.env.ADMIN_PASSWORD || 'admin123'),
         firstName: 'Admin',
         role: UserRole.ADMIN,
+        profession: 'Administrateur',
+        profileCompleted: true,
       });
       await this.usersRepository.save(admin);
     }

@@ -9,6 +9,7 @@ import { Availability } from './entities/availability.entity';
 import { CreateAvailabilityDto } from './dto/create-availability.dto';
 import { User } from '../users/entities/user.entity';
 import { AuthenticatedUser, isAdmin } from '../common/types/jwt-request';
+import { isProviderRole } from '../users/role.util';
 
 /**
  * Service de gestion des disponibilités.
@@ -29,20 +30,27 @@ export class DisponibilitesService {
   /**
    * Crée un créneau de disponibilité après avoir résolu l'owner.
    *
-   * Un utilisateur ne peut publier un créneau que sur son propre agenda ;
-   * seul un administrateur peut le faire pour un tiers.
+   * Publier un créneau est réservé aux prestataires, et uniquement sur leur
+   * propre agenda ; seul un administrateur peut le faire pour un tiers.
    *
    * @throws NotFoundException si l'utilisateur propriétaire n'existe pas.
-   * @throws ForbiddenException si l'auteur publie pour un autre utilisateur.
+   * @throws ForbiddenException si l'auteur n'est pas prestataire ou publie pour autrui.
    */
   async create(
     dto: CreateAvailabilityDto,
     actor: AuthenticatedUser,
   ): Promise<Availability> {
-    if (!isAdmin(actor) && dto.ownerId !== actor.userId) {
-      throw new ForbiddenException(
-        'Vous ne pouvez publier un créneau que sur votre propre agenda',
-      );
+    if (!isAdmin(actor)) {
+      if (!isProviderRole(actor.role)) {
+        throw new ForbiddenException(
+          'Seul un prestataire peut publier des créneaux de disponibilité',
+        );
+      }
+      if (dto.ownerId !== actor.userId) {
+        throw new ForbiddenException(
+          'Vous ne pouvez publier un créneau que sur votre propre agenda',
+        );
+      }
     }
 
     const owner = await this.userRepository.findOne({

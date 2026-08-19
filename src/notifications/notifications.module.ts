@@ -4,6 +4,7 @@ import { Notification } from './entities/notification.entity';
 import { NotificationsService } from './notifications.service';
 import { NotificationsController } from './notifications.controller';
 import { EmailModule } from '../email/email.module';
+import { UsersModule } from '../users/users.module';
 
 /**
  * Module des notifications.
@@ -13,7 +14,7 @@ import { EmailModule } from '../email/email.module';
  * avec le canal NotificationChannel.EMAIL.
  */
 @Module({
-  imports: [TypeOrmModule.forFeature([Notification]), EmailModule],
+  imports: [TypeOrmModule.forFeature([Notification]), EmailModule, UsersModule],
   providers: [NotificationsService],
   controllers: [NotificationsController],
   exports: [NotificationsService],

@@ -4,6 +4,7 @@ import { Availability } from './entities/availability.entity';
 import { User } from '../users/entities/user.entity';
 import { DisponibilitesController } from './disponibilites.controller';
 import { DisponibilitesService } from './disponibilites.service';
+import { UsersModule } from '../users/users.module';
 
 /**
  * Module des disponibilités.
@@ -12,7 +13,7 @@ import { DisponibilitesService } from './disponibilites.service';
  * l'ownerId pour peupler la relation owner lors de la création.
  */
 @Module({
-  imports: [TypeOrmModule.forFeature([Availability, User])],
+  imports: [TypeOrmModule.forFeature([Availability, User]), UsersModule],
   controllers: [DisponibilitesController],
   providers: [DisponibilitesService],
   exports: [DisponibilitesService],

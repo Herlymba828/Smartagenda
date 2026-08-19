@@ -5,20 +5,23 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  MaxLength,
   MinLength,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { UserRole } from '../../users/entities/user.entity';
+import { SELF_SERVICE_ROLES } from '../../users/role.util';
 
-/** Rôles qu'un visiteur peut choisir lui-même à l'inscription. */
-export type SelfServiceRole = UserRole.STUDENT | UserRole.TEACHER;
+/** Rôles techniques qu'un visiteur peut choisir lui-même à l'inscription. */
+export type SelfServiceRole = UserRole.CLIENT | UserRole.PROVIDER;
 
 /**
  * DTO d'inscription — corps attendu pour POST /auth/register.
  *
- * Contrairement à CreateUserDto, `role` est optionnel (student par défaut)
- * et ne peut pas valoir `admin` : un compte administrateur ne se crée pas
- * en libre-service.
+ * `role` porte le comportement système (client = réserve, prestataire = publie)
+ * et `profession` la profession déclarée, purement descriptive. Les rôles
+ * hérités (`student`, `teacher`, `utilisateur`) et `admin` sont refusés :
+ * un compte administrateur ne se crée pas en libre-service.
  */
 export class RegisterDto {
   @ApiProperty({
@@ -47,15 +50,25 @@ export class RegisterDto {
   @IsOptional()
   lastName?: string;
 
-  @ApiPropertyOptional({
-    enum: [UserRole.STUDENT, UserRole.TEACHER],
-    default: UserRole.STUDENT,
-    description: 'Requested role — admin cannot be self-assigned',
+  @ApiProperty({
+    enum: SELF_SERVICE_ROLES,
+    example: UserRole.CLIENT,
+    description:
+      'Technical role — client books slots, prestataire publishes them',
   })
-  @IsOptional()
   @IsEnum(UserRole)
-  @IsIn([UserRole.STUDENT, UserRole.TEACHER], {
-    message: 'role must be one of the following values: student, teacher',
+  @IsIn(SELF_SERVICE_ROLES, {
+    message: 'role must be one of the following values: client, prestataire',
   })
-  role?: SelfServiceRole;
+  role!: SelfServiceRole;
+
+  @ApiProperty({
+    example: 'Médecin généraliste',
+    description:
+      'Declared profession — descriptive only, never used for access control',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(120)
+  profession!: string;
 }

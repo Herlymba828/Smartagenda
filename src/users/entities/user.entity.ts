@@ -12,13 +12,24 @@ import {
 } from 'typeorm';
 
 /**
- * Rôles disponibles dans l'application.
- * Détermine les accès aux routes et aux fonctionnalités.
+ * Rôle technique de l'utilisateur — pilote le comportement système.
+ *
+ * Deux comportements seulement, valables quel que soit le secteur d'activité :
+ * un prestataire publie des créneaux, un client réserve. La profession réelle
+ * (médecin, coiffeur, enseignant…) est portée par le champ `profession` et
+ * reste purement descriptive.
+ *
+ * Les valeurs `student`, `teacher` et `utilisateur` sont conservées pour les
+ * comptes existants ; elles sont traitées comme leur équivalent technique via
+ * `isProviderRole()` / `isClientRole()` et ne sont plus proposées à l'inscription.
  */
 export enum UserRole {
-  STUDENT = 'student', // Peut créer des rendez-vous et consulter les disponibilités
-  TEACHER = 'teacher', // Peut publier des disponibilités et gérer les demandes de RDV
+  CLIENT = 'client', // Réserve des créneaux publiés par les prestataires
+  PROVIDER = 'prestataire', // Publie des créneaux et traite les demandes de RDV
   ADMIN = 'admin', // Accès complet à la gestion des utilisateurs
+  STUDENT = 'student', // Hérité — équivalent de `client`
+  TEACHER = 'teacher', // Hérité — équivalent de `prestataire`
+  LEGACY_USER = 'utilisateur', // Hérité — rôle générique, profil à compléter
 }
 
 /**
@@ -54,6 +65,22 @@ export class User {
   /** Rôle de l'utilisateur — stocké comme enum PostgreSQL natif. */
   @Column({ type: 'enum', enum: UserRole, default: UserRole.STUDENT })
   role!: UserRole;
+
+  /**
+   * Profession déclarée (médecin, coiffeur, avocat, enseignant…).
+   * Purement descriptive : sert à l'affichage et à la recherche, jamais aux
+   * autorisations, qui reposent uniquement sur `role`.
+   */
+  @Column({ type: 'varchar', length: 120, nullable: true })
+  profession?: string;
+
+  /**
+   * Faux tant que l'utilisateur n'a pas déclaré son rôle technique et sa
+   * profession. Les comptes créés avant cette évolution restent à false et
+   * sont redirigés vers PATCH /auth/complete-profile.
+   */
+  @Column({ type: 'boolean', default: false })
+  profileCompleted!: boolean;
 
   /** Disponibilités publiées par cet utilisateur (si enseignant). */
   @OneToMany(() => Availability, (availability) => availability.owner)
