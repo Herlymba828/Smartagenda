@@ -1,9 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Availability } from './entities/availability.entity';
 import { CreateAvailabilityDto } from './dto/create-availability.dto';
 import { User } from '../users/entities/user.entity';
+import { AuthenticatedUser, isAdmin } from '../common/types/jwt-request';
 
 /**
  * Service de gestion des disponibilités.
@@ -23,9 +28,23 @@ export class DisponibilitesService {
 
   /**
    * Crée un créneau de disponibilité après avoir résolu l'owner.
+   *
+   * Un utilisateur ne peut publier un créneau que sur son propre agenda ;
+   * seul un administrateur peut le faire pour un tiers.
+   *
    * @throws NotFoundException si l'utilisateur propriétaire n'existe pas.
+   * @throws ForbiddenException si l'auteur publie pour un autre utilisateur.
    */
-  async create(dto: CreateAvailabilityDto): Promise<Availability> {
+  async create(
+    dto: CreateAvailabilityDto,
+    actor: AuthenticatedUser,
+  ): Promise<Availability> {
+    if (!isAdmin(actor) && dto.ownerId !== actor.userId) {
+      throw new ForbiddenException(
+        'Vous ne pouvez publier un créneau que sur votre propre agenda',
+      );
+    }
+
     const owner = await this.userRepository.findOne({
       where: { id: dto.ownerId },
     });
@@ -66,9 +85,15 @@ export class DisponibilitesService {
   /**
    * Supprime physiquement une disponibilité.
    * @throws NotFoundException si la disponibilité n'existe pas.
+   * @throws ForbiddenException si l'utilisateur n'en est pas propriétaire.
    */
-  async remove(id: number): Promise<void> {
+  async remove(id: number, actor: AuthenticatedUser): Promise<void> {
     const availability = await this.findOne(id);
+    if (!isAdmin(actor) && availability.owner.id !== actor.userId) {
+      throw new ForbiddenException(
+        'Vous ne pouvez supprimer que vos propres créneaux',
+      );
+    }
     await this.availabilityRepository.remove(availability);
   }
 }

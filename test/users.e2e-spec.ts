@@ -1,8 +1,7 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import { Server } from 'http';
 import request from 'supertest';
-import { AppModule } from './../src/app.module';
+import { createTestApp, uniqueSuffix } from './utils/create-test-app';
 
 interface IdResponse {
   id: number;
@@ -13,23 +12,23 @@ interface LoginResponse {
 }
 
 describe('UsersController (e2e)', () => {
+  // Emails uniques : la base e2e n'est pas réinitialisée entre les exécutions.
+  const suffix = uniqueSuffix();
+  const testEmail = `e2e-test-${suffix}@example.com`;
+  const newUserEmail = `e2e-newuser-${suffix}@example.com`;
+
   let app: INestApplication;
   let authToken: string;
   let testUserId: number;
 
   beforeAll(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-    await app.init();
+    app = await createTestApp();
 
     // Create a test user and authenticate
     const createUserResponse = await request(app.getHttpServer() as Server)
       .post('/users')
       .send({
-        email: 'e2e-test@example.com',
+        email: testEmail,
         password: 'test123',
         firstName: 'E2E',
         lastName: 'Test',
@@ -43,7 +42,7 @@ describe('UsersController (e2e)', () => {
     const loginResponse = await request(app.getHttpServer() as Server)
       .post('/auth/login')
       .send({
-        email: 'e2e-test@example.com',
+        email: testEmail,
         password: 'test123',
       })
       .expect(200);
@@ -66,7 +65,7 @@ describe('UsersController (e2e)', () => {
       return request(app.getHttpServer() as Server)
         .post('/users')
         .send({
-          email: 'newuser@example.com',
+          email: newUserEmail,
           password: 'password123',
           firstName: 'New',
           lastName: 'User',
@@ -75,7 +74,7 @@ describe('UsersController (e2e)', () => {
         .expect(201)
         .expect((res) => {
           expect(res.body).toHaveProperty('id');
-          expect(res.body).toHaveProperty('email', 'newuser@example.com');
+          expect(res.body).toHaveProperty('email', newUserEmail);
           expect(res.body).not.toHaveProperty('password');
         });
     });
@@ -96,7 +95,7 @@ describe('UsersController (e2e)', () => {
       return request(app.getHttpServer() as Server)
         .post('/users')
         .send({
-          email: 'test@example.com',
+          email: `e2e-short-${suffix}@example.com`,
           password: '123',
           firstName: 'Test',
           role: 'student',
@@ -113,7 +112,7 @@ describe('UsersController (e2e)', () => {
         .expect(200)
         .expect((res) => {
           expect(res.body).toHaveProperty('id');
-          expect(res.body).toHaveProperty('email', 'e2e-test@example.com');
+          expect(res.body).toHaveProperty('email', testEmail);
           expect(res.body).not.toHaveProperty('password');
         });
     });

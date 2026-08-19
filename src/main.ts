@@ -1,8 +1,8 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe, Logger } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { configureApp } from './app.setup';
 
 /**
  * Point d'entrée de l'application NestJS SmartAgenda.
@@ -24,18 +24,8 @@ async function bootstrap() {
   // Keep the API namespace consistent with the frontend and reverse proxy.
   app.setGlobalPrefix('api');
 
-  // ValidationPipe global : strip des propriétés non déclarées dans les DTOs,
-  // rejet des propriétés inconnues, et transformation automatique des types
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true, // Supprime les propriétés non listées dans le DTO
-      forbidNonWhitelisted: true, // Retourne 400 si des propriétés inconnues sont envoyées
-      transform: true, // Convertit automatiquement les types (ex: string → number)
-    }),
-  );
-
-  // Filtre d'exception global : normalise toutes les réponses d'erreur
-  app.useGlobalFilters(new HttpExceptionFilter());
+  // ValidationPipe et filtre d'exception globaux, partagés avec les tests e2e
+  configureApp(app);
 
   // CORS : restreint aux requêtes provenant du frontend configuré
   // FRONTEND_URL doit être défini en production pour ne pas exposer l'API à toutes origines

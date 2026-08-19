@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+  Logger,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
@@ -6,6 +11,7 @@ import {
   NotificationChannel,
 } from './entities/notification.entity';
 import { EmailService } from '../email/email.service';
+import { AuthenticatedUser, isAdmin } from '../common/types/jwt-request';
 
 /**
  * Service de gestion des notifications.
@@ -66,6 +72,42 @@ export class NotificationsService {
   }
 
   /**
+   * Retourne les notifications destinées à l'utilisateur connecté,
+   * les plus récentes d'abord. Un administrateur reçoit l'ensemble.
+   */
+  async findAllForUser(actor: AuthenticatedUser): Promise<Notification[]> {
+    if (isAdmin(actor)) {
+      return this.notificationRepository.find({
+        relations: { user: true },
+        order: { sentAt: 'DESC' },
+      });
+    }
+
+    return this.notificationRepository.find({
+      where: { user: { id: actor.userId } },
+      relations: { user: true },
+      order: { sentAt: 'DESC' },
+    });
+  }
+
+  /**
+   * Retourne une notification en vérifiant qu'elle est bien destinée à l'utilisateur.
+   * @throws ForbiddenException si l'utilisateur n'en est pas le destinataire.
+   */
+  async findOneForUser(
+    id: number,
+    actor: AuthenticatedUser,
+  ): Promise<Notification> {
+    const notification = await this.findOne(id);
+    if (!isAdmin(actor) && notification.user.id !== actor.userId) {
+      throw new ForbiddenException(
+        'Cette notification ne vous est pas destinée',
+      );
+    }
+    return notification;
+  }
+
+  /**
    * Retourne une notification par ID.
    * @throws NotFoundException si la notification n'existe pas.
    */
@@ -83,9 +125,10 @@ export class NotificationsService {
   /**
    * Marque une notification comme lue (read = true).
    * @throws NotFoundException si la notification n'existe pas.
+   * @throws ForbiddenException si elle appartient à un autre utilisateur.
    */
-  async markRead(id: number): Promise<Notification> {
-    const notification = await this.findOne(id);
+  async markRead(id: number, actor: AuthenticatedUser): Promise<Notification> {
+    const notification = await this.findOneForUser(id, actor);
     notification.read = true;
     return this.notificationRepository.save(notification);
   }

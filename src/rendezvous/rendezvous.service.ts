@@ -1,15 +1,24 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Appointment, AppointmentStatus } from './entities/appointment.entity';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
+import { AppointmentDecision } from './dto/update-appointment-status.dto';
 import { User } from '../users/entities/user.entity';
+import { AuthenticatedUser, isAdmin } from '../common/types/jwt-request';
+import { NotificationsService } from '../notifications/notifications.service';
 
 /**
  * Service de gestion des rendez-vous.
  *
  * Orchestre les opérations CRUD sur les rendez-vous en résolvant
- * les relations avec les utilisateurs (student et teacher).
+ * les relations avec les utilisateurs (student et teacher), en appliquant
+ * le cloisonnement par utilisateur et en notifiant l'autre participant
+ * à chaque étape du cycle de vie du rendez-vous.
  */
 @Injectable()
 export class RendezvousService {
@@ -18,17 +27,33 @@ export class RendezvousService {
     private readonly appointmentRepository: Repository<Appointment>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   /**
    * Crée un rendez-vous après avoir résolu les IDs student et teacher.
    *
-   * Les deux recherches d'utilisateurs sont parallélisées avec Promise.all
-   * pour réduire la latence (deux SELECT simultanés au lieu de séquentiels).
+   * Un étudiant ne peut réserver que pour lui-même et un enseignant ne peut
+   * créer un rendez-vous que sur son propre agenda ; l'administrateur n'est
+   * pas restreint. L'enseignant concerné reçoit une notification.
    *
    * @throws NotFoundException si l'un des deux utilisateurs est introuvable.
+   * @throws ForbiddenException si l'auteur n'est pas partie prenante du rendez-vous.
    */
-  async create(dto: CreateAppointmentDto): Promise<Appointment> {
+  async create(
+    dto: CreateAppointmentDto,
+    actor: AuthenticatedUser,
+  ): Promise<Appointment> {
+    if (
+      !isAdmin(actor) &&
+      actor.userId !== dto.studentId &&
+      actor.userId !== dto.teacherId
+    ) {
+      throw new ForbiddenException(
+        'Vous ne pouvez créer un rendez-vous que pour vous-même',
+      );
+    }
+
     const [student, teacher] = await Promise.all([
       this.userRepository.findOne({ where: { id: dto.studentId } }),
       this.userRepository.findOne({ where: { id: dto.teacherId } }),
@@ -48,15 +73,33 @@ export class RendezvousService {
       isVirtual: dto.isVirtual ?? false,
       status: dto.status ?? undefined, // Par défaut : PENDING (valeur par défaut de l'entité)
     });
-    return this.appointmentRepository.save(appointment);
+    const saved = await this.appointmentRepository.save(appointment);
+
+    await this.notificationsService.create({
+      user: teacher,
+      title: 'Nouvelle demande de rendez-vous',
+      message: `${student.firstName} demande un rendez-vous « ${saved.subject} » le ${saved.startAt.toLocaleString('fr-FR')}.`,
+    });
+
+    return saved;
   }
 
   /**
-   * Retourne tous les rendez-vous avec les relations student et teacher peuplées.
-   * Le frontend filtre ensuite côté client selon le rôle de l'utilisateur connecté.
+   * Retourne les rendez-vous visibles par l'utilisateur : ceux auxquels il
+   * participe comme étudiant ou enseignant, ou la totalité pour un admin.
    */
-  async findAll(): Promise<Appointment[]> {
+  async findAllForUser(actor: AuthenticatedUser): Promise<Appointment[]> {
+    if (isAdmin(actor)) {
+      return this.appointmentRepository.find({
+        relations: { student: true, teacher: true },
+      });
+    }
+
     return this.appointmentRepository.find({
+      where: [
+        { student: { id: actor.userId } },
+        { teacher: { id: actor.userId } },
+      ],
       relations: { student: true, teacher: true },
     });
   }
@@ -77,14 +120,94 @@ export class RendezvousService {
   }
 
   /**
+   * Retourne un rendez-vous en vérifiant que l'utilisateur y participe.
+   * @throws ForbiddenException si l'utilisateur n'est ni participant ni admin.
+   */
+  async findOneForUser(
+    id: number,
+    actor: AuthenticatedUser,
+  ): Promise<Appointment> {
+    const appointment = await this.findOne(id);
+    if (!this.isParticipant(appointment, actor)) {
+      throw new ForbiddenException('Ce rendez-vous ne vous est pas accessible');
+    }
+    return appointment;
+  }
+
+  /**
+   * Confirme ou annule un rendez-vous et notifie l'autre participant.
+   *
+   * La confirmation est réservée à l'enseignant concerné (ou à un admin) ;
+   * l'annulation est ouverte aux deux participants.
+   *
+   * @throws ForbiddenException si l'utilisateur n'a pas le droit d'appliquer ce statut.
+   */
+  async updateStatus(
+    id: number,
+    status: AppointmentDecision,
+    actor: AuthenticatedUser,
+  ): Promise<Appointment> {
+    const appointment = await this.findOneForUser(id, actor);
+
+    const isTeacher = appointment.teacher.id === actor.userId;
+    if (
+      status === AppointmentStatus.CONFIRMED &&
+      !isTeacher &&
+      !isAdmin(actor)
+    ) {
+      throw new ForbiddenException(
+        "Seul l'enseignant peut confirmer ce rendez-vous",
+      );
+    }
+
+    appointment.status = status;
+    const saved = await this.appointmentRepository.save(appointment);
+    await this.notifyCounterpart(saved, actor, status);
+    return saved;
+  }
+
+  /**
    * Annule un rendez-vous en passant son statut à CANCELLED.
    * N'effectue pas de suppression physique pour préserver l'historique.
    *
    * @throws NotFoundException si le rendez-vous n'existe pas.
+   * @throws ForbiddenException si l'utilisateur n'y participe pas.
    */
-  async cancel(id: number): Promise<Appointment> {
-    const appointment = await this.findOne(id);
-    appointment.status = AppointmentStatus.CANCELLED;
-    return this.appointmentRepository.save(appointment);
+  async cancel(id: number, actor: AuthenticatedUser): Promise<Appointment> {
+    return this.updateStatus(id, AppointmentStatus.CANCELLED, actor);
+  }
+
+  /** Vérifie que l'utilisateur est étudiant, enseignant du rendez-vous, ou admin. */
+  private isParticipant(
+    appointment: Appointment,
+    actor: AuthenticatedUser,
+  ): boolean {
+    return (
+      isAdmin(actor) ||
+      appointment.student.id === actor.userId ||
+      appointment.teacher.id === actor.userId
+    );
+  }
+
+  /** Notifie le participant qui n'est pas à l'origine du changement de statut. */
+  private async notifyCounterpart(
+    appointment: Appointment,
+    actor: AuthenticatedUser,
+    status: AppointmentDecision,
+  ): Promise<void> {
+    const recipient =
+      appointment.student.id === actor.userId
+        ? appointment.teacher
+        : appointment.student;
+    const title =
+      status === AppointmentStatus.CONFIRMED
+        ? 'Rendez-vous confirmé'
+        : 'Rendez-vous annulé';
+
+    await this.notificationsService.create({
+      user: recipient,
+      title,
+      message: `Le rendez-vous « ${appointment.subject} » du ${appointment.startAt.toLocaleString('fr-FR')} est ${status === AppointmentStatus.CONFIRMED ? 'confirmé' : 'annulé'}.`,
+    });
   }
 }
