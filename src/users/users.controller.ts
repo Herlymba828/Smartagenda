@@ -14,20 +14,9 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import type { JwtRequest } from '../common/types/jwt-request';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UsersService } from './users.service';
-
-/**
- * Type du request NestJS enrichi par la stratégie JWT Passport.
- * Injecté via @Request() dans les handlers protégés par JwtAuthGuard.
- */
-interface JwtRequest {
-  user: {
-    userId: number;
-    email: string;
-    role: string;
-  };
-}
 
 /**
  * Contrôleur de gestion des utilisateurs.

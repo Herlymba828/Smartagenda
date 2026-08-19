@@ -99,8 +99,11 @@ Files: `src/users/dto/create-user.dto.ts`, `src/users/users.controller.ts`
 ---
 
 ## Availabilities
+All availability endpoints require `Authorization: Bearer <token>`.
+
 ### POST /api/availabilities
-- Description: Create availability
+- Description: Create availability on your own agenda (`ownerId` must be your id; admins may target any user)
+- Auth: required — 403 otherwise
 - Request body (CreateAvailabilityDto):
 
 ```json
@@ -115,7 +118,7 @@ Files: `src/users/dto/create-user.dto.ts`, `src/users/users.controller.ts`
 - Response: created availability object
 
 ### GET /api/availabilities
-- Description: List availabilities (owner relation included)
+- Description: List availabilities (owner relation included) — visible to every authenticated user so students can book
 - Response: array of availabilities
 
 ### GET /api/availabilities/:id
@@ -123,16 +126,19 @@ Files: `src/users/dto/create-user.dto.ts`, `src/users/users.controller.ts`
 - Response: availability object or 404
 
 ### DELETE /api/availabilities/:id
-- Description: Delete an availability (removes resource)
-- Response: 200/204
+- Description: Delete one of your own slots (admins may delete any)
+- Response: 200/204, or 403 if you are not the owner
 
 Files: `src/disponibilites/dto/create-availability.dto.ts`, `src/disponibilites/disponibilites.controller.ts`
 
 ---
 
 ## Appointments
+All appointment endpoints require `Authorization: Bearer <token>`. Users only ever
+see appointments they take part in; admins see everything.
+
 ### POST /api/appointments
-- Description: Create an appointment
+- Description: Create an appointment — you must be the student or the teacher of the appointment (403 otherwise). Notifies the counterpart.
 - Request body (CreateAppointmentDto):
 
 ```json
@@ -150,27 +156,41 @@ Files: `src/disponibilites/dto/create-availability.dto.ts`, `src/disponibilites/
 - Response: created appointment
 
 ### GET /api/appointments
-- Description: List appointments
+- Description: List your own appointments (as student or teacher)
 
 ### GET /api/appointments/:id
-- Description: Get appointment by id
+- Description: Get appointment by id — 403 if you are not a participant
+
+### PATCH /api/appointments/:id/status
+- Description: Confirm or decline an appointment; notifies the counterpart
+- Request body:
+
+```json
+{ "status": "confirmed" }
+```
+
+- `confirmed` is reserved to the teacher of the appointment (or an admin); `cancelled` is allowed for both participants
+- Any other value returns 400
 
 ### DELETE /api/appointments/:id
-- Description: Cancel/Delete appointment
+- Description: Cancel the appointment (soft cancel: status becomes `cancelled`); notifies the counterpart
 
-Files: `src/rendezvous/dto/create-appointment.dto.ts`, `src/rendezvous/rendezvous.controller.ts`
+Files: `src/rendezvous/dto/create-appointment.dto.ts`, `src/rendezvous/dto/update-appointment-status.dto.ts`, `src/rendezvous/rendezvous.controller.ts`
 
 ---
 
 ## Notifications
+All notification endpoints require `Authorization: Bearer <token>` and are scoped
+to the current user (admins see everything).
+
 ### GET /api/notifications
-- List notifications
+- List your own notifications, most recent first
 
 ### GET /api/notifications/:id
-- Get notification by id
+- Get one of your notifications by id — 403 if it belongs to somebody else
 
 ### PATCH /api/notifications/:id/read
-- Mark notification as read
+- Mark one of your notifications as read — 403 if it belongs to somebody else
 
 Files: `src/notifications/notifications.controller.ts`
 

@@ -36,6 +36,8 @@ import { EmailModule } from './email/email.module';
             limit: configService.get<number>('RATE_LIMIT_LIMIT', 100),
           },
         ],
+        // Les quotas fausseraient les suites e2e, qui créent plusieurs comptes.
+        skipIf: () => configService.get<string>('NODE_ENV') === 'test',
       }),
     }),
 
